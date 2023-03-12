@@ -15,8 +15,10 @@ function App() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [data, setData] = useState();
+  const [searchQ, setSearchQ] = useState("");
   const [modalIsOpen, setIsOpen] = React.useState(false);
-
+  const [modalIsUpadate, setIsModalUpdate] = useState(false);
+  const [userId, setUserId] = useState();
   const usersData = JSON.parse(localStorage.getItem("userData"));
   useEffect(() => {
     usersData && setData(usersData);
@@ -25,7 +27,24 @@ function App() {
     setIsOpen(true);
   }
 
+  useEffect(() => {
+    let searchedUsers = [];
+    if (data && data.length) {
+      if (searchQ.trim()) {
+        let foundUser = data.filter(
+          (item) =>
+            item.firstName.toLowerCase() === searchQ.toLowerCase() ||
+            item.lastName.toLowerCase() === searchQ.toLowerCase() ||
+            item.email.toLowerCase() === searchQ.toLowerCase()
+        );
+        foundUser[0] && searchedUsers.push(foundUser[0]);
+      }
+      if (searchedUsers && searchedUsers.length) setData(searchedUsers);
+      if (searchQ.trim().length === 0) setData(usersData);
+    }
+  }, [searchQ]);
   function closeModal() {
+    setIsModalUpdate(false);
     setIsOpen(false);
     setFirstName("");
     setLastName("");
@@ -54,26 +73,70 @@ function App() {
         email: email,
       };
       users.push(newUsers);
+      alert("Users added!");
     }
-    console.log(newUsers);
+    // console.log(newUsers);
     setData(users);
     localStorage.setItem("userData", JSON.stringify(users));
     closeModal();
   };
+
+  const deleteUser = (id) => {
+    console.log(id);
+    const confirm = window.confirm("Are you sure want to delete?");
+    if (confirm) {
+      let deletedUser = data.filter((item, index) => index !== id);
+      // console.log(deletedUser);
+      localStorage.setItem("userData", JSON.stringify(deletedUser));
+      setData(deletedUser);
+    }
+  };
+  const editUser = (id) => {
+    setUserId(id);
+    let userToEdit = data.filter((item, index) => index === id);
+    console.log(userToEdit);
+    setFirstName(userToEdit[0].firstName);
+    setLastName(userToEdit[0].lastName);
+    setEmail(userToEdit[0].email);
+    setIsModalUpdate(true);
+  };
+  const saveUpdateUser = (e, id) => {
+    e.preventDefault();
+    let users = [...data];
+    let oldUser = {
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+    };
+    users[id] = oldUser;
+    setData(users);
+    localStorage.setItem("userData", JSON.stringify(users));
+    setIsModalUpdate(false);
+    alert("user updated!");
+  };
   return (
     <div className="App">
       <h4 style={{ marginTop: "25px" }}>
-        Users List{" "}
-        <button className="btn btn-success text-light" onClick={openModal}>
+        Users
+        <button className="btn btn-success text-light mx-2" onClick={openModal}>
           {" "}
           + Add User{" "}
         </button>
       </h4>
+      <div className="w-50 mx-auto mb-3">
+        <input
+          className="form-control mt-2"
+          type="text"
+          placeholder="search users"
+          onChange={(e) => setSearchQ(e.target.value)}
+        />
+      </div>
       <div className="row">
         {data &&
           data?.map((item, index) => {
             return (
               <div
+                key={index}
                 className="card col-sm-12  col-md-6 col-lg-4"
                 style={{ width: "400px", margin: "auto", marginBottom: "20px" }}
               >
@@ -90,13 +153,25 @@ function App() {
                       margin: "auto",
                     }}
                   >
-                    {item.firstName.slice(0, 1).toUpperCase()}
-                    {item.lastName.slice(0, 1).toUpperCase()}
+                    {item?.firstName.slice(0, 1).toUpperCase()}
+                    {item?.lastName.slice(0, 1).toUpperCase()}
                   </div>
                   <p className="card-text">
-                    Name: {item.firstName} {item.lastName}
+                    Name: {item?.firstName} {item?.lastName}
                   </p>
-                  <p className="card-text">Email: {item.email}</p>
+                  <p className="card-text">Email: {item?.email}</p>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => editUser(index)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-danger mx-2"
+                    onClick={() => deleteUser(index)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             );
@@ -141,6 +216,47 @@ function App() {
             onClick={(e) => saveNewUser(e)}
           >
             Save
+          </button>
+        </form>
+      </Modal>
+      <Modal
+        isOpen={modalIsUpadate}
+        style={customStyles}
+        contentLabel="Example Modal"
+        ariaHideApp={false}
+      >
+        <form>
+          <input
+            className="form-control mt-2"
+            type="text"
+            placeholder="first name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+          <input
+            className="form-control mt-2"
+            type="text"
+            placeholder="last name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+          <input
+            className="form-control mt-2"
+            type="text"
+            placeholder="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <br />
+          <button className="btn btn-info" onClick={closeModal}>
+            Cancel
+          </button>
+          <button
+            style={{ marginLeft: "20px" }}
+            className="btn btn-primary"
+            onClick={(e) => saveUpdateUser(e, userId)}
+          >
+            Save Changes
           </button>
         </form>
       </Modal>
